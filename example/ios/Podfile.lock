@@ -1,0 +1,22 @@
+PODS:
+  - Flutter (1.0.0)
+  - mx_novice_guide (0.0.1):
+    - Flutter
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - mx_novice_guide (from `.symlinks/plugins/mx_novice_guide/ios`)
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  mx_novice_guide:
+    :path: ".symlinks/plugins/mx_novice_guide/ios"
+
+SPEC CHECKSUMS:
+  Flutter: f04841e97a9d0b0a8025694d0796dd46242b2854
+  mx_novice_guide: ea2ff146c22fd5fc83a483c796dbf061b1393417
+
+PODFILE CHECKSUM: 70d9d25280d0dd177a5f637cdb0f0b0b12c6a189
+
+COCOAPODS: 1.11.3

@@ -1,7 +1,7 @@
 name: mx_novice_guide
 description: A beginner guide plugin
 version: 1.0.0
-homepage:
+homepage: https://github.com/MagicalWater/mx_novice_guide
 
 environment:
   sdk: '>=3.0.0 <4.0.0'

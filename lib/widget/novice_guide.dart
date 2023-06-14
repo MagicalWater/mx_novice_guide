@@ -83,6 +83,11 @@ class NoviceGuideState extends State<NoviceGuide>
   // late AnimationController _pulseController;
   // late Animation _tweenPulse;
 
+  /// 當前是否為把focus釋放的時期
+  /// 通常發生在呼叫next/previous的endFocus之後, 在syncDisplay之前
+  /// 在此之間不會有任何的_focusRect
+  bool isFocusRelease = true;
+
   @override
   void initState() {
     super.initState();
@@ -143,18 +148,20 @@ class NoviceGuideState extends State<NoviceGuide>
     for (var element in _focusRect) {
       element._startGetRect();
     }
+
+    isFocusRelease = false;
   }
 
   /// 關閉當前高亮區塊
-  Future<void> _endFocus() async {
-    final endRectFuture = _focusRect.map((e) => e.endRect());
+  Future<void> _endFocus({
+    bool withAnimation = true,
+  }) async {
+    final endRectFuture = _focusRect.map((e) => e.endRect(
+          withAnimation: withAnimation,
+        ));
     await Future.wait(endRectFuture);
-
-    for (var element in _focusRect) {
-      element.endRect();
-    }
-
     _focusRect.clear();
+    isFocusRelease = true;
   }
 
   @override
@@ -237,7 +244,7 @@ class NoviceGuideState extends State<NoviceGuide>
 
     // print('混合desc是否已經準備好 => $isAllTargetReady');
 
-    if (!isAllTargetReady) {
+    if (!isAllTargetReady || isFocusRelease) {
       return const SizedBox.shrink();
     }
 
@@ -250,7 +257,11 @@ class NoviceGuideState extends State<NoviceGuide>
     }
 
     return targetRect.target.descBuilder!(
-        context, widget.controller, targetRect, _focusRect);
+      context,
+      widget.controller,
+      targetRect,
+      _focusRect,
+    );
   }
 
   Widget _buildSkip({
@@ -275,9 +286,23 @@ class NoviceGuideState extends State<NoviceGuide>
     );
   }
 
+  /// [waitCurrentEnd] - 是否等待當前步驟關閉後再跳下個步驟
+  /// [currentEndWithAnimation] - 關閉當前步驟是否有動畫
+  /// [onCurrentEndComplete] - 當前步驟完全關閉後回調
   @override
-  Future<void> next() async {
-    await _endFocus();
+  Future<void> next({
+    bool waitCurrentEnd = true,
+    bool currentEndWithAnimation = true,
+    FutureCallback? onCurrentEndComplete,
+  }) async {
+    if (waitCurrentEnd) {
+      await _endFocus(withAnimation: currentEndWithAnimation);
+      await onCurrentEndComplete?.call();
+    } else {
+      _endFocus(withAnimation: currentEndWithAnimation).then((value) {
+        onCurrentEndComplete?.call();
+      });
+    }
 
     if (!canNext()) {
       if (kDebugMode) {
@@ -300,8 +325,15 @@ class NoviceGuideState extends State<NoviceGuide>
     _syncDisplay();
   }
 
+  /// [waitCurrentEnd] - 是否等待當前步驟關閉後再跳上個步驟
+  /// [currentEndWithAnimation] - 關閉當前步驟是否有動畫
+  /// [onCurrentEndComplete] - 當前步驟完全關閉後回調
   @override
-  Future<void> previous() async {
+  Future<void> previous({
+    bool waitCurrentEnd = true,
+    bool currentEndWithAnimation = true,
+    FutureCallback? onCurrentEndComplete,
+  }) async {
     if (!canPrevious()) {
       if (kDebugMode) {
         print('$_tag - 沒有上一步了');
@@ -309,7 +341,14 @@ class NoviceGuideState extends State<NoviceGuide>
       return;
     }
 
-    await _endFocus();
+    if (waitCurrentEnd) {
+      await _endFocus(withAnimation: currentEndWithAnimation);
+      await onCurrentEndComplete?.call();
+    } else {
+      _endFocus(withAnimation: currentEndWithAnimation).then((value) {
+        onCurrentEndComplete?.call();
+      });
+    }
     _currentStepIndex--;
 
     if (!mounted) {

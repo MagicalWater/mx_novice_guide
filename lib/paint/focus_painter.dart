@@ -1,7 +1,6 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:mx_novice_guide/model/model.dart';
 
 import '../widget/novice_guide.dart';
 
@@ -26,18 +25,24 @@ class FocusPainter extends CustomPainter {
       ..lineTo(size.width, 0)
       ..close();
 
-    final targetPathMap = <FocusTarget, Path>{};
+    final targetPathMap = <TargetRectGetter, Path>{};
+
+    Path? totalTargetPath;
+
+    final usedMaskColor = maskColor ?? Colors.black.withOpacity(0.6);
 
     // 挖掉目標rect
     for (var element in targets) {
       final target = element.target;
+      final oriRect = element.oriRect;
       final rect = element.displayRect;
 
-      if (rect == null) {
+      if (rect == null || oriRect == null) {
         continue;
       }
 
       final targetPath = Path();
+
       if (target.shape == BoxShape.rectangle) {
         targetPath.addRRect(rect);
       } else {
@@ -48,7 +53,14 @@ class FocusPainter extends CustomPainter {
           height: maxSize,
         ));
       }
-      targetPathMap[target] = targetPath;
+      targetPathMap[element] = targetPath;
+
+      if (totalTargetPath == null) {
+        totalTargetPath = targetPath;
+      } else {
+        totalTargetPath =
+            Path.combine(PathOperation.union, totalTargetPath, targetPath);
+      }
       fullPath = Path.combine(PathOperation.difference, fullPath, targetPath);
     }
 
@@ -56,11 +68,30 @@ class FocusPainter extends CustomPainter {
       fullPath,
       Paint()
         ..style = PaintingStyle.fill
-        ..color = maskColor ?? Colors.black.withOpacity(0.6),
+        ..color = usedMaskColor,
     );
 
+    if (totalTargetPath != null) {
+      double? maxProgress;
+      for (var element in targets) {
+        maxProgress ??= element.progress;
+        maxProgress = max(maxProgress, element.progress);
+      }
+
+      if (maxProgress != null) {
+        final oriOpacity = usedMaskColor.opacity;
+        final progressOpacity = oriOpacity * maxProgress;
+        canvas.drawPath(
+          totalTargetPath,
+          Paint()
+            ..style = PaintingStyle.fill
+            ..color = usedMaskColor.withOpacity(oriOpacity - progressOpacity),
+        );
+      }
+    }
+
     targetPathMap.forEach((key, value) {
-      final borderSide = key.borderSide;
+      final borderSide = key.target.borderSide;
       if (borderSide != null && borderSide.style != BorderStyle.none) {
         canvas.drawPath(
           value,
@@ -71,14 +102,6 @@ class FocusPainter extends CustomPainter {
         );
       }
     });
-    // if (borderSide != null && borderSide?.style != BorderStyle.none) {
-    //   canvas.drawPath(
-    //       justCircleHole,
-    //       Paint()
-    //         ..style = PaintingStyle.stroke
-    //         ..color = borderSide!.color
-    //         ..strokeWidth = borderSide!.width);
-    // }
   }
 
   @override

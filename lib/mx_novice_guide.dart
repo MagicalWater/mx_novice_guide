@@ -114,14 +114,40 @@ class MxNoviceGuide implements NoviceGuideController {
   @override
   int? get currentStepIndex => _usedController.currentStepIndex;
 
+  /// [waitCurrentEnd] - 是否等待當前步驟關閉後再跳下個步驟
+  /// [currentEndWithAnimation] - 關閉當前步驟是否有動畫
+  /// [onCurrentEndComplete] -
+  ///         當前步驟完全關閉後回調, 若需要在此執行等待操作, 可以在此回傳Future, 當[waitCurrentEnd]為true時有效
   @override
-  Future<void> next() => _usedController.next();
+  Future<void> next({
+    bool waitCurrentEnd = true,
+    bool currentEndWithAnimation = true,
+    FutureCallback? onCurrentEndComplete,
+  }) =>
+      _usedController.next(
+        waitCurrentEnd: waitCurrentEnd,
+        currentEndWithAnimation: currentEndWithAnimation,
+        onCurrentEndComplete: onCurrentEndComplete,
+      );
 
   @override
   bool canNext() => _usedController.canNext();
 
+  /// [waitCurrentEnd] - 是否等待當前步驟關閉後再跳上個步驟
+  /// [currentEndWithAnimation] - 關閉當前步驟是否有動畫
+  /// [onCurrentEndComplete] -
+  ///         當前步驟完全關閉後回調, 若需要在此執行等待操作, 可以在此回傳Future, 當[waitCurrentEnd]為true時有效
   @override
-  Future<void> previous() => _usedController.previous();
+  Future<void> previous({
+    bool waitCurrentEnd = true,
+    bool currentEndWithAnimation = true,
+    FutureCallback? onCurrentEndComplete,
+  }) =>
+      _usedController.previous(
+        waitCurrentEnd: waitCurrentEnd,
+        currentEndWithAnimation: currentEndWithAnimation,
+        onCurrentEndComplete: onCurrentEndComplete,
+      );
 
   @override
   bool canPrevious() => _usedController.canPrevious();

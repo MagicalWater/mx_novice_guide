@@ -29,10 +29,14 @@ class TargetRectGetter {
   /// 顯示進度
   double get progress => _progress;
 
+  final ValueChanged<FocusRect> onRectGet;
+
+  late Animation _animation;
+
   TargetRectGetter({
     required this.target,
     required TickerProvider animationVsync,
-    required ValueChanged<FocusRect> onRectGet,
+    required this.onRectGet,
     this.rootOverlay = false,
   }) {
     _controller = AnimationController(
@@ -44,63 +48,74 @@ class TargetRectGetter {
       parent: _controller,
       curve: Curves.fastLinearToSlowEaseIn,
     );
-    final animation = Tween(begin: 0.0, end: 1.0).animate(curveAnimation);
-    animation.addListener(() {
-      if (_oriRect != null) {
-        _progress = _controller.value;
-        final width = _oriRect!.width * animation.value;
-        final height = _oriRect!.height * animation.value;
-        final rect = Rect.fromCenter(
-          center: _oriRect!.center,
-          width: width,
-          height: height,
-        );
-        final rrect = RRect.fromRectAndCorners(
-          rect,
-          topLeft: _oriRect!.tlRadius,
-          topRight: _oriRect!.trRadius,
-          bottomLeft: _oriRect!.blRadius,
-          bottomRight: _oriRect!.brRadius,
-        );
-        _displayRect = rrect;
-        onRectGet(FocusRect(
-          real: _oriRect!,
-          display: rrect,
-        ));
-      }
-    });
+    _animation = Tween(begin: 0.0, end: 1.0).animate(curveAnimation);
+    _animation.addListener(_syncRect);
+  }
+
+  /// 同步_oriRect到displayRect
+  void _syncRect() {
+    if (_oriRect != null) {
+      _progress = _controller.value;
+      final width = _oriRect!.width * _animation.value;
+      final height = _oriRect!.height * _animation.value;
+      final rect = Rect.fromCenter(
+        center: _oriRect!.center,
+        width: width,
+        height: height,
+      );
+      final rrect = RRect.fromRectAndCorners(
+        rect,
+        topLeft: _oriRect!.tlRadius,
+        topRight: _oriRect!.trRadius,
+        bottomLeft: _oriRect!.blRadius,
+        bottomRight: _oriRect!.brRadius,
+      );
+      _displayRect = rrect;
+      onRectGet(FocusRect(
+        real: _oriRect!,
+        display: rrect,
+      ));
+    }
   }
 
   /// 開始獲取rect
   void _startGetRect() {
     final rect = target.getTargetRect(rootOverlay: rootOverlay);
     if (rect != null) {
-      // print('取得rect => $rect');
       _oriRect = rect;
-      _displayRect = null;
       _startAnimRect();
+      _startTimerGetRect();
     } else {
-      // print('無法取得rect, 進入循環');
       _startTimerGetRect();
     }
   }
 
   /// 結束展示
-  TickerFuture endRect() {
-    return _controller.reverse();
+  TickerFuture endRect({
+    bool withAnimation = true,
+  }) {
+    _stopTimer();
+    if (withAnimation) {
+      return _controller.reverse();
+    } else {
+      _controller.reset();
+      return TickerFuture.complete();
+    }
   }
 
   void _startTimerGetRect() {
     _stopTimer();
     _periodTimer = Timer.periodic(
-      const Duration(seconds: 1),
+      const Duration(milliseconds: 100),
       (timer) {
         final rect = target.getTargetRect(rootOverlay: rootOverlay);
         if (rect != null) {
           _oriRect = rect;
-          _displayRect = null;
-          _stopTimer();
-          _startAnimRect();
+          if (_controller.status == AnimationStatus.dismissed) {
+            _startAnimRect();
+          } else {
+            _syncRect();
+          }
         }
       },
     );
@@ -120,6 +135,7 @@ class TargetRectGetter {
 
   void dispose() {
     _stopTimer();
+    _animation.removeListener(_syncRect);
     _controller.dispose();
   }
 }

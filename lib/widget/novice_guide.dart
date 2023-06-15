@@ -33,6 +33,15 @@ class NoviceGuide extends StatefulWidget {
   /// 預設[FocusTarget.maskColor]顏色遮罩
   final Color? maskColor;
 
+  /// 預設[FocusTarget.animationDuration]鎖定target時的動畫時間
+  final Duration animationDuration;
+
+  /// 預設[FocusTarget.animationType]鎖定目標的方式
+  final FocusAnimationType animationType;
+
+  /// 預設[FocusTarget.animationCurve]鎖定動畫差值器
+  final Curve animationCurve;
+
   final bool pulseEnable;
 
   final bool rootOverlay;
@@ -52,6 +61,9 @@ class NoviceGuide extends StatefulWidget {
     this.skipAlign = Alignment.topRight,
     this.skipMargin,
     this.maskColor,
+    this.animationDuration = const Duration(milliseconds: 300),
+    this.animationType = FocusAnimationType.targetCenter,
+    this.animationCurve = Curves.fastOutSlowIn,
     this.pulseEnable = true,
     this.rootOverlay = false,
     this.onFinish,
@@ -134,6 +146,9 @@ class NoviceGuideState extends State<NoviceGuide>
       return TargetRectGetter(
         target: e,
         animationVsync: this,
+        defaultAnimationDuration: widget.animationDuration,
+        defaultAnimationType: widget.animationType,
+        defaultAnimationCurve: widget.animationCurve,
         onRectGet: (rect) {
           if (mounted) {
             setState(() {});
@@ -146,7 +161,7 @@ class NoviceGuideState extends State<NoviceGuide>
     _focusRect.addAll(targetsRect);
 
     for (var element in _focusRect) {
-      element._startGetRect();
+      element._startGetRect(context);
     }
 
     isFocusRelease = false;
@@ -186,6 +201,7 @@ class NoviceGuideState extends State<NoviceGuide>
               painter: FocusPainter(
                 targets: effectiveTarget,
                 maskColor: _currentStep?.maskColor ?? widget.maskColor,
+                defaultAnimationType: widget.animationType,
               ),
             ),
           ),
@@ -199,18 +215,16 @@ class NoviceGuideState extends State<NoviceGuide>
 
           // 若高亮區塊展示出來, 也需要構建content
           if (stepDesc != null)
-            AnimatedOpacity(
+            Opacity(
               opacity: _focusRect.isEmpty
                   ? 0
-                  : _focusRect.map((e) => e.progress).reduce(min),
-              duration: const Duration(milliseconds: 300),
+                  : _focusRect.map((e) => e._descProgress).reduce(min),
               child: _buildMultiDesc(stepDesc),
             )
           else
             ..._focusRect.map((element) {
-              return AnimatedOpacity(
-                opacity: element.progress,
-                duration: const Duration(milliseconds: 300),
+              return Opacity(
+                opacity: element._descProgress,
                 child: _buildSingleDesc(element),
               );
             }),

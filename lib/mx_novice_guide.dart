@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mx_novice_guide/model/focus_target.dart';
 
 import 'model/controller.dart';
+import 'model/focus_animation_type.dart';
 import 'model/guide_step.dart';
 import 'widget/novice_guide.dart';
 
@@ -33,6 +34,15 @@ class MxNoviceGuide implements NoviceGuideController {
   /// 預設[FocusTarget.maskColor]顏色遮罩
   final Color? maskColor;
 
+  /// 鎖定target時的動畫時間
+  final Duration animationDuration;
+
+  /// 鎖定目標的方式, 預設為[FocusAnimationType.targetCenter]
+  final FocusAnimationType animationType;
+
+  /// 鎖定動畫差值器
+  final Curve animationCurve;
+
   final bool pulseEnable;
 
   final NoviceGuideController? controller;
@@ -50,6 +60,9 @@ class MxNoviceGuide implements NoviceGuideController {
     this.skipAlign = Alignment.topRight,
     this.skipMargin,
     this.maskColor,
+    this.animationDuration = const Duration(milliseconds: 300),
+    this.animationType = FocusAnimationType.targetCenter,
+    this.animationCurve = Curves.fastOutSlowIn,
     this.pulseEnable = true,
   }) : _usedController = controller ?? NoviceGuideController.create();
 
@@ -67,6 +80,9 @@ class MxNoviceGuide implements NoviceGuideController {
           skipAlign: skipAlign,
           skipMargin: skipMargin,
           maskColor: maskColor,
+          animationDuration: animationDuration,
+          animationType: animationType,
+          animationCurve: animationCurve,
           pulseEnable: pulseEnable,
           rootOverlay: rootOverlay,
           controller: _usedController,

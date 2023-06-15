@@ -5,6 +5,7 @@ import 'package:mx_novice_guide/model/controller.dart';
 import 'package:mx_novice_guide/widget/touch_rule_widget.dart';
 
 import '../widget/novice_guide.dart';
+import 'focus_animation_type.dart';
 import 'function_def.dart';
 
 /// 需要鎖定的目標
@@ -36,13 +37,17 @@ class FocusTarget {
   final BorderSide? borderSide;
 
   /// target顯示的目標區塊間距
+  /// 用途只是可以控制目標的間距, 因此與[Padding]元件不同, 可以為負值
   final EdgeInsets? targetPadding;
 
   /// 鎖定target時的動畫時間
-  final Duration? focusAnimationDuration;
+  final Duration? animationDuration;
 
-  /// 解除鎖定target時的動畫時間
-  final Duration? unFocusAnimationDuration;
+  /// 鎖定目標的方式
+  final FocusAnimationType? animationType;
+
+  /// 鎖定動畫差值器
+  final Curve? animationCurve;
 
   /// 目標外框顫動動畫
   final Tween<double>? pulseVariation;
@@ -63,8 +68,9 @@ class FocusTarget {
     this.borderRadius,
     this.borderSide,
     this.targetPadding,
-    this.focusAnimationDuration,
-    this.unFocusAnimationDuration,
+    this.animationDuration,
+    this.animationType,
+    this.animationCurve,
     this.pulseVariation,
     this.targetPlaceBuilder = _defaultTargetPlaceBuilder,
   }) : assert(targetKey != null || targetRect != null);

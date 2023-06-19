@@ -88,6 +88,9 @@ class NoviceGuideState extends State<NoviceGuide>
   /// 高亮的區塊Rect獲取
   final _focusRect = <TargetRectGetter>[];
 
+  /// 當下使用的[animationType]
+  late FocusAnimationType _usedAnimationType;
+
   /// 實際展示的target與Rect
   // final displayRect = <FocusTarget, FocusRect>{};
 
@@ -104,6 +107,7 @@ class NoviceGuideState extends State<NoviceGuide>
   void initState() {
     super.initState();
     _currentStepIndex = -1;
+    _usedAnimationType = widget.animationType;
     _bindController(
       oldController: null,
       currentController: widget.controller,
@@ -138,11 +142,13 @@ class NoviceGuideState extends State<NoviceGuide>
     }
   }
 
-  /// 同步需要展示的元件
-  void _syncDisplay() {
-    // 取得當下index對應的區塊
-    _currentStep = widget.builder(context, _currentStepIndex);
-    final targetsRect = _currentStep!.targets.map((e) {
+  /// 取得某個步驟的Rect Getter
+  NextStepInfo getTargetRectGetter(
+    int stepIndex,
+  ) {
+    final step = widget.builder(context, stepIndex);
+
+    final rectGetter = step.targets.map((e) {
       return TargetRectGetter(
         target: e,
         animationVsync: this,
@@ -158,7 +164,32 @@ class NoviceGuideState extends State<NoviceGuide>
         rootOverlay: widget.rootOverlay,
       );
     });
-    _focusRect.addAll(targetsRect);
+
+    FocusAnimationType? animationType;
+
+    if (rectGetter.isEmpty) {
+      animationType = widget.animationType;
+    } else {
+      if (rectGetter.any((element) => element.animationType.isScreen)) {
+        animationType = FocusAnimationType.screen;
+      } else {
+        animationType = FocusAnimationType.targetCenter;
+      }
+    }
+
+    return NextStepInfo(
+      step: step,
+      rectGetter: rectGetter,
+      animationType: animationType,
+    );
+  }
+
+  /// 同步需要展示的元件
+  void _syncDisplay(NextStepInfo stepInfo) {
+    // 取得當下index對應的區塊
+    _currentStep = stepInfo.step;
+    _focusRect.addAll(stepInfo.rectGetter);
+    _usedAnimationType = stepInfo.animationType;
 
     for (var element in _focusRect) {
       element._startGetRect(context);
@@ -168,11 +199,14 @@ class NoviceGuideState extends State<NoviceGuide>
   }
 
   /// 關閉當前高亮區塊
+  /// [nextAnimationType] 結束展示後, 下一個過度動畫的類型
   Future<void> _endFocus({
     bool withAnimation = true,
+    FocusAnimationType? nextAnimationType,
   }) async {
     final endRectFuture = _focusRect.map((e) => e.endRect(
           withAnimation: withAnimation,
+          nextAnimationType: nextAnimationType,
         ));
     await Future.wait(endRectFuture);
     _focusRect.clear();
@@ -201,7 +235,7 @@ class NoviceGuideState extends State<NoviceGuide>
               painter: FocusPainter(
                 targets: effectiveTarget,
                 maskColor: _currentStep?.maskColor ?? widget.maskColor,
-                defaultAnimationType: widget.animationType,
+                usedAnimationType: _usedAnimationType,
               ),
             ),
           ),
@@ -309,16 +343,31 @@ class NoviceGuideState extends State<NoviceGuide>
     bool currentEndWithAnimation = true,
     FutureCallback? onCurrentEndComplete,
   }) async {
+    NextStepInfo? nextStep;
+
+    if (canNext()) {
+      // 取得下一個步驟的動畫類型
+      nextStep = getTargetRectGetter(_currentStepIndex + 1);
+    }
+
+    _usedAnimationType = nextStep?.animationType ?? widget.animationType;
+
     if (waitCurrentEnd) {
-      await _endFocus(withAnimation: currentEndWithAnimation);
+      await _endFocus(
+        withAnimation: currentEndWithAnimation,
+        nextAnimationType: nextStep?.animationType,
+      );
       await onCurrentEndComplete?.call();
     } else {
-      _endFocus(withAnimation: currentEndWithAnimation).then((value) {
+      _endFocus(
+        withAnimation: currentEndWithAnimation,
+        nextAnimationType: nextStep?.animationType,
+      ).then((value) {
         onCurrentEndComplete?.call();
       });
     }
 
-    if (!canNext()) {
+    if (!canNext() || nextStep == null) {
       if (kDebugMode) {
         print('$_tag - 教學結束');
       }
@@ -336,7 +385,7 @@ class NoviceGuideState extends State<NoviceGuide>
       return;
     }
 
-    _syncDisplay();
+    _syncDisplay(nextStep);
   }
 
   /// [waitCurrentEnd] - 是否等待當前步驟關閉後再跳上個步驟
@@ -348,7 +397,16 @@ class NoviceGuideState extends State<NoviceGuide>
     bool currentEndWithAnimation = true,
     FutureCallback? onCurrentEndComplete,
   }) async {
-    if (!canPrevious()) {
+    NextStepInfo? prevStep;
+
+    if (canPrevious()) {
+      // 取得下一個步驟的動畫類型
+      prevStep = getTargetRectGetter(_currentStepIndex - 1);
+    }
+
+    _usedAnimationType = prevStep?.animationType ?? widget.animationType;
+
+    if (!canPrevious() || prevStep == null) {
       if (kDebugMode) {
         print('$_tag - 沒有上一步了');
       }
@@ -356,10 +414,16 @@ class NoviceGuideState extends State<NoviceGuide>
     }
 
     if (waitCurrentEnd) {
-      await _endFocus(withAnimation: currentEndWithAnimation);
+      await _endFocus(
+        withAnimation: currentEndWithAnimation,
+        nextAnimationType: prevStep.animationType,
+      );
       await onCurrentEndComplete?.call();
     } else {
-      _endFocus(withAnimation: currentEndWithAnimation).then((value) {
+      _endFocus(
+        withAnimation: currentEndWithAnimation,
+        nextAnimationType: prevStep.animationType,
+      ).then((value) {
         onCurrentEndComplete?.call();
       });
     }
@@ -369,7 +433,7 @@ class NoviceGuideState extends State<NoviceGuide>
       return;
     }
 
-    _syncDisplay();
+    _syncDisplay(prevStep);
   }
 
   @override
@@ -399,4 +463,16 @@ class NoviceGuideState extends State<NoviceGuide>
   @override
   int? get currentStepIndex =>
       _currentStepIndex != -1 ? _currentStepIndex : null;
+}
+
+class NextStepInfo {
+  final GuideStep step;
+  final Iterable<TargetRectGetter> rectGetter;
+  final FocusAnimationType animationType;
+
+  NextStepInfo({
+    required this.step,
+    required this.rectGetter,
+    required this.animationType,
+  });
 }

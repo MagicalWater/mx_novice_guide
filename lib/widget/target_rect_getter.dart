@@ -37,7 +37,9 @@ class TargetRectGetter {
 
   final ValueChanged<FocusRect> onRectGet;
 
-  late Animation<double> _progressAnimation;
+  late Animation<double> _progressCenterAnimation;
+
+  late Animation<double> _progressScreenAnimation;
 
   late Animation<double> _descAnimation;
 
@@ -45,6 +47,12 @@ class TargetRectGetter {
 
   /// 鎖定目標的方式, 預設為[FocusAnimationType.targetCenter]
   final FocusAnimationType animationType;
+
+  /// 當前是否正在向前執行動畫
+  bool _isAnimationForward = false;
+
+  /// 當正在執行取消focus動畫時, 以此表明下一個步驟的過度動畫類型
+  FocusAnimationType? _nextAnimationType;
 
   TargetRectGetter({
     required this.target,
@@ -65,9 +73,14 @@ class TargetRectGetter {
       curve: target.animationCurve ?? defaultAnimationCurve,
     );
 
-    _progressAnimation = Tween(
-      begin: animationType.isTargetCenter ? 0.0 : 1.0,
-      end: animationType.isTargetCenter ? 1.0 : 0.0,
+    _progressCenterAnimation = Tween(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(curveAnimation);
+
+    _progressScreenAnimation = Tween(
+      begin: 1.0,
+      end: 0.0,
     ).animate(curveAnimation);
 
     _descAnimation = CurvedAnimation(
@@ -85,7 +98,11 @@ class TargetRectGetter {
       _descProgress = _descAnimation.value;
 
       double width, height;
-      switch (animationType) {
+
+      final type = _isAnimationForward
+          ? animationType
+          : (_nextAnimationType ?? animationType);
+      switch (type) {
         case FocusAnimationType.screen:
           final maxWidthDistance = [
             oriRect!.left * 2,
@@ -99,12 +116,14 @@ class TargetRectGetter {
             screenSize!.height,
           ].reduce(max);
 
-          width = _oriRect!.width + (maxWidthDistance * _progressAnimation.value);
-          height = _oriRect!.height + (maxHeightDistance * _progressAnimation.value);
+          width = _oriRect!.width +
+              (maxWidthDistance * _progressScreenAnimation.value);
+          height = _oriRect!.height +
+              (maxHeightDistance * _progressScreenAnimation.value);
           break;
         case FocusAnimationType.targetCenter:
-          width = _oriRect!.width * _progressAnimation.value;
-          height = _oriRect!.height * _progressAnimation.value;
+          width = _oriRect!.width * _progressCenterAnimation.value;
+          height = _oriRect!.height * _progressCenterAnimation.value;
           break;
       }
 
@@ -142,9 +161,13 @@ class TargetRectGetter {
   }
 
   /// 結束展示
+  /// [nextAnimationType] 結束展示後, 下一個過度動畫的類型
   TickerFuture endRect({
     bool withAnimation = true,
+    FocusAnimationType? nextAnimationType,
   }) {
+    _isAnimationForward = false;
+    _nextAnimationType = nextAnimationType;
     _stopTimer();
     if (withAnimation) {
       return _controller.reverse();
@@ -174,6 +197,7 @@ class TargetRectGetter {
 
   /// 啟動區塊動畫
   void _startAnimRect() {
+    _isAnimationForward = true;
     _controller.forward();
   }
 

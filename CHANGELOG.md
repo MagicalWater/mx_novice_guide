@@ -1,10 +1,13 @@
+## 1.0.3+1
+- Fixed that when the FocusAnimationType of the two steps are different, the transition animation is not smooth when switching between each other
+
 ## 1.0.2+1
 - Optimize the display of desc, add an animation interpolator to make the transition softer
 
 - Add three new parameters
   * animationDuration - execute focus animation time
   * animationType - focus animation type
-  * animationCurve - focus animation differencer
+  * animationCurve - focus animation curve
 
 ## 1.0.1+1
 - MxNoviceGuide.next() and MxNoviceGuide.previous() methods add parameters

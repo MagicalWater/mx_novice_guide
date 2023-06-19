@@ -8,12 +8,12 @@ import '../widget/novice_guide.dart';
 class FocusPainter extends CustomPainter {
   final Color? maskColor;
   final Iterable<TargetRectGetter> targets;
-  final FocusAnimationType defaultAnimationType;
+  final FocusAnimationType usedAnimationType;
 
   FocusPainter({
     required this.targets,
     required this.maskColor,
-    required this.defaultAnimationType,
+    required this.usedAnimationType,
   });
 
   @override
@@ -34,8 +34,6 @@ class FocusPainter extends CustomPainter {
 
     final usedMaskColor = maskColor ?? Colors.black.withOpacity(0.6);
 
-    FocusAnimationType? focusAnimationType;
-
     double? maxProgress;
 
     // 挖掉目標rect
@@ -43,7 +41,6 @@ class FocusPainter extends CustomPainter {
       final target = element.target;
       final oriRect = element.oriRect;
       final rect = element.displayRect;
-      focusAnimationType ??= element.animationType;
       maxProgress ??= element.progress;
       maxProgress = max(maxProgress, element.progress);
 
@@ -74,9 +71,7 @@ class FocusPainter extends CustomPainter {
       fullPath = Path.combine(PathOperation.difference, fullPath, targetPath);
     }
 
-    focusAnimationType ??= defaultAnimationType;
-
-    switch (focusAnimationType) {
+    switch (usedAnimationType) {
       case FocusAnimationType.targetCenter:
         canvas.drawPath(
           fullPath,

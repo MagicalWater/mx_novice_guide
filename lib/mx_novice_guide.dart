@@ -51,6 +51,12 @@ class MxNoviceGuide implements NoviceGuideController {
 
   OverlayEntry? _overlayEntry;
 
+  /// 是否自動開始第一個步驟
+  final bool autoStart;
+
+  /// 自動開始延遲時間
+  final Duration? autoStartDelay;
+
   MxNoviceGuide({
     required this.count,
     required this.builder,
@@ -64,6 +70,8 @@ class MxNoviceGuide implements NoviceGuideController {
     this.animationType = FocusAnimationType.targetCenter,
     this.animationCurve = Curves.fastOutSlowIn,
     this.pulseEnable = true,
+    this.autoStart = true,
+    this.autoStartDelay = const Duration(milliseconds: 300),
   }) : _usedController = controller ?? NoviceGuideController.create();
 
   OverlayEntry _buildOverlay({
@@ -86,6 +94,8 @@ class MxNoviceGuide implements NoviceGuideController {
           pulseEnable: pulseEnable,
           rootOverlay: rootOverlay,
           controller: _usedController,
+          autoStart: autoStart,
+          autoStartDelay: autoStartDelay,
           onFinish: () {
             _removeOverlay();
             onFinish?.call();

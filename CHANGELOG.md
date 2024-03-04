@@ -1,3 +1,8 @@
+## 1.0.4+1
+- MxNoviceGuide
+  * Added variables autoStart: whether to automatically start the first step
+  * Added variables autoStartDelay: delay time for automatic start
+
 ## 1.0.3+1
 - Fixed that when the FocusAnimationType of the two steps are different, the transition animation is not smooth when switching between each other
 

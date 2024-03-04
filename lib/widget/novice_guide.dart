@@ -51,6 +51,12 @@ class NoviceGuide extends StatefulWidget {
   /// 流程結束
   final VoidCallback? onFinish;
 
+  /// 是否自動開始第一個步驟
+  final bool autoStart;
+
+  /// 自動開始延遲時間
+  final Duration? autoStartDelay;
+
   const NoviceGuide({
     super.key,
     required this.count,
@@ -67,6 +73,8 @@ class NoviceGuide extends StatefulWidget {
     this.pulseEnable = true,
     this.rootOverlay = false,
     this.onFinish,
+    this.autoStart = true,
+    this.autoStartDelay = const Duration(milliseconds: 300),
   });
 
   @override
@@ -112,7 +120,18 @@ class NoviceGuideState extends State<NoviceGuide>
       oldController: null,
       currentController: widget.controller,
     );
-    next();
+    if (widget.autoStart) {
+      final delay = widget.autoStartDelay;
+      if (delay != null) {
+        Future.delayed(delay).then((value) {
+          if (!mounted) {
+            next();
+          }
+        });
+      } else {
+        next();
+      }
+    }
   }
 
   @override

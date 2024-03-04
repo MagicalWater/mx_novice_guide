@@ -1,4 +1,4 @@
-## 1.0.4+1
+## 1.0.4+2
 - MxNoviceGuide
   * Added variables autoStart: whether to automatically start the first step
   * Added variables autoStartDelay: delay time for automatic start

@@ -124,7 +124,7 @@ class NoviceGuideState extends State<NoviceGuide>
       final delay = widget.autoStartDelay;
       if (delay != null) {
         Future.delayed(delay).then((value) {
-          if (!mounted) {
+          if (mounted) {
             next();
           }
         });

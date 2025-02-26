@@ -1,3 +1,6 @@
+## 1.1.0+1
+- Upadate android gradle version
+
 ## 1.0.4+2
 - MxNoviceGuide
   * Added variables autoStart: whether to automatically start the first step

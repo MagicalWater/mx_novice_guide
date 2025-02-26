@@ -1,18 +1,18 @@
 name: mx_novice_guide
 description: A beginner guide plugin
-version: 1.0.4+2
+version: 1.1.0+1
 homepage: https://github.com/MagicalWater/mx_novice_guide
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
-  flutter: ">=3.3.0"
+  sdk: ^3.5.3
+  flutter: '>=3.24.3'
 
 dependencies:
   flutter:
     sdk: flutter
 
 dev_dependencies:
-  flutter_lints: ^2.0.0
+  flutter_lints: ^5.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
